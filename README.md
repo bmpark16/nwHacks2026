@@ -2,6 +2,8 @@
 
 A desktop application that helps incentivize intense productivity by monitoring user behavior through camera analysis and triggering Arduino actions when procrastination is detected.
 
+Here is our devpost submission for Wet Reminder : https://devpost.com/software/wet-reminder
+
 ## Features
 
 - **Timer Modes**: Pomodoro-style timer with customizable focus and break times, or manual mode
