@@ -1,0 +1,47 @@
+/* Color Variables */
+:root {
+  --color-white: #E4E4E4;
+  --color-background: #000516;
+  --color-blue: #0079d9;
+  --color-dark-gray: #0a0f1e;
+  --color-light-gray: #232733;
+  --color-green: #024510;
+  --color-red: #441623;
+  --color-secondary: #85878D;
+}
+
+/* Typography Classes */
+.title {
+  font-size: 48px;
+  font-weight: 700; /* bold */
+  font-family: 'Satoshi', sans-serif;
+  color: var(--color-white);
+}
+
+.timer-text {
+  font-size: 48px;
+  font-weight: 400; /* regular */
+  font-family: 'Satoshi', sans-serif;
+  color: var(--color-white);
+}
+
+.button-text {
+  font-size: 16px;
+  font-weight: 700; /* bold */
+  font-family: 'Satoshi', sans-serif;
+  color: var(--color-white);
+}
+
+.default-text {
+  font-size: 14px;
+  font-weight: 400; /* regular */
+  font-family: 'Satoshi', sans-serif;
+  color: var(--color-white);
+}
+
+.secondary-text {
+  font-size: 14px;
+  font-weight: 400; /* regular */
+  font-family: 'Satoshi', sans-serif;
+  color: var(--color-secondary);
+}

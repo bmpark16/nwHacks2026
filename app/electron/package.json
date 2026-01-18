@@ -1,0 +1,7 @@
+{
+  "name": "electron-main",
+  "version": "1.0.0",
+  "description": "Electron main process",
+  "main": "main.js",
+  "private": true
+}

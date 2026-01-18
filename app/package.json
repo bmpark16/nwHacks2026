@@ -1,0 +1,22 @@
+{
+  "name": "nwhacks2026-electron-app",
+  "version": "1.0.0",
+  "description": "Electron application with camera access",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:ui\" \"wait-on http://localhost:5173 && npm run dev:electron\"",
+    "dev:ui": "cd ui && npm run dev",
+    "dev:electron": "electron .",
+    "build": "cd ui && npm run build",
+    "start": "electron .",
+    "install:all": "npm install && cd electron && npm install && cd ../ui && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "wait-on": "^7.2.0"
+  }
+}

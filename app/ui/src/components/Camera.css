@@ -1,0 +1,131 @@
+.camera-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.camera-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 1280px;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.camera-placeholder,
+.camera-error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-dark-gray);
+  color: var(--color-white);
+}
+
+.camera-placeholder p {
+  font-size: 1.2rem;
+  color: var(--color-secondary);
+}
+
+.camera-error {
+  background: rgba(68, 22, 35, 0.1);
+  border: 2px solid rgba(68, 22, 35, 0.3);
+}
+
+.camera-error p {
+  font-size: 1rem;
+  color: var(--color-red);
+  padding: 20px;
+  text-align: center;
+  max-width: 80%;
+}
+
+.camera-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.camera-button {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Satoshi', sans-serif;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-white);
+}
+
+.camera-button-start {
+  background: var(--color-green);
+}
+
+.camera-button-start:hover {
+  background: #035a0d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(2, 69, 16, 0.4);
+}
+
+.camera-button-start:active {
+  transform: translateY(0);
+}
+
+.camera-button-stop {
+  background: var(--color-red);
+}
+
+.camera-button-stop:hover {
+  background: #5a1d2f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 22, 35, 0.4);
+}
+
+.camera-button-stop:active {
+  transform: translateY(0);
+}
+
+.camera-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-green);
+  font-size: 14px;
+  font-family: 'Satoshi', sans-serif;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--color-green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

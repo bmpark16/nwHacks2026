@@ -1,0 +1,149 @@
+.timer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.timer-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-secondary);
+}
+
+.timer-text {
+  font-size: 64px;
+  font-weight: 400;
+  font-family: 'Satoshi', sans-serif;
+  color: var(--color-white);
+  line-height: 1;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.timer-button {
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Satoshi', sans-serif;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-button {
+  background: var(--color-green);
+  flex: 1;
+  max-width: 200px;
+}
+
+.start-button:hover {
+  background: #035a0d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(2, 69, 16, 0.4);
+}
+
+.mode-button {
+  background: var(--color-light-gray);
+  flex: 1;
+  max-width: 200px;
+}
+
+.mode-button:hover {
+  background: #2d3440;
+  transform: translateY(-2px);
+}
+
+.swap-icon {
+  font-size: 18px;
+}
+
+.stop-button {
+  background: #441623;
+  width: 100%;
+  max-width: 300px;
+}
+
+.stop-button:hover {
+  background: #5a1d2f;
+  transform: translateY(-2px);
+}
+
+.stop-button.confirm {
+  background: #8b2e47;
+  animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.timer-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.preset-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preset-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-secondary);
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.preset-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Satoshi', sans-serif;
+  background: var(--color-dark-gray);
+  border: 1px solid var(--color-light-gray);
+  border-radius: 6px;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-button:hover {
+  border-color: var(--color-white);
+  color: var(--color-white);
+}
+
+.preset-button.active {
+  background: transparent;
+  border-color: var(--color-white);
+  color: var(--color-white);
+  font-weight: 700;
+}
