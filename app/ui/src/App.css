@@ -5,7 +5,8 @@
   flex-direction: column;
   background: var(--color-background);
   color: var(--color-white);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .App-header {
@@ -33,7 +34,15 @@
   display: flex;
   gap: 24px;
   padding: 24px 32px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+@media (max-width: 1024px) {
+  .App-main {
+    flex-direction: column;
+  }
 }
 
 .App-left-panel {
@@ -42,6 +51,7 @@
   flex-direction: column;
   gap: 24px;
   min-width: 0;
+  margin-bottom: 24px;
 }
 
 .App-right-panel {
