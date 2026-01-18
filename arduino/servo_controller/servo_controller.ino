@@ -3,7 +3,7 @@
 Servo myServo;
 const int SERVO_PIN = 9;  // Connect servo to digital pin 9
 const int START_POSITION = 0;
-const int END_POSITION = 130;
+const int END_POSITION = 105;
 const int SWEEP_DELAY = 15;  // Delay between each degree (ms)
 const int RESET_DELAY = 500;  // Delay before resetting (ms)
 

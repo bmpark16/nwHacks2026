@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model_processor import ModelProcessor
 from arduino_controller import ArduinoController
-from config import DEFAULT_PROBABILITY_THRESHOLD, SERVER_PORT, SEQUENCE_LENGTH, KEYPOINT_DIM, ACTIONS
+from config import DEFAULT_PROBABILITY_THRESHOLD, ARDUINO_TRIGGER_THRESHOLD, SERVER_PORT, SEQUENCE_LENGTH, KEYPOINT_DIM, ACTIONS
 
 app = Flask(__name__)
 CORS(app)
@@ -121,11 +121,15 @@ def process_frame():
         result = processor.process_frame(frame_data, threshold)
 
         if result:
-            # Trigger Arduino servo if doomscrolling detected
+            # Trigger Arduino servo if doomscrolling detected with high confidence
             arduino_triggered = False
             if arduino and result.get('action') and result['action'].lower() == 'doomscrolling':
-                arduino_triggered = arduino.trigger('doomscrolling')
-                print(f"Doomscrolling detected! Triggering servo sweep.")
+                confidence = result.get('confidence', 0.0)
+                if confidence >= ARDUINO_TRIGGER_THRESHOLD:
+                    arduino_triggered = arduino.trigger('doomscrolling')
+                    print(f"Doomscrolling detected with {confidence:.2f} confidence! Triggering servo sweep.")
+                else:
+                    print(f"Doomscrolling detected but confidence {confidence:.2f} below Arduino threshold {ARDUINO_TRIGGER_THRESHOLD}")
 
             return jsonify({
                 'success': True,

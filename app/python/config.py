@@ -20,8 +20,11 @@ KEYPOINT_DIM = 1662
 # Probability threshold (can be overridden by settings)
 DEFAULT_PROBABILITY_THRESHOLD = 0.5
 
+# Arduino trigger threshold (higher to reduce false positives)
+ARDUINO_TRIGGER_THRESHOLD = 0.9
+
 # Arduino configuration
-ARDUINO_PORT = None  # Will be set from settings or auto-detected
+ARDUINO_PORT = '/dev/cu.usbmodem101'  # Arduino port
 ARDUINO_BAUDRATE = 9600
 
 # Server configuration
