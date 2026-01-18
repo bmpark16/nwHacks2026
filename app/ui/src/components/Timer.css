@@ -26,6 +26,15 @@
   line-height: 1;
 }
 
+.timer-state-indicator {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Satoshi', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
 .timer-controls {
   display: flex;
   gap: 16px;
@@ -146,4 +155,46 @@
   border-color: var(--color-white);
   color: var(--color-white);
   font-weight: 700;
+}
+
+.cycles-dropdown {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Satoshi', sans-serif;
+  background: var(--color-dark-gray);
+  border: 1px solid var(--color-light-gray);
+  border-radius: 6px;
+  color: var(--color-white);
+  cursor: pointer;
+  width: 100%;
+  max-width: 200px;
+}
+
+.cycles-dropdown:focus {
+  outline: none;
+  border-color: var(--color-white);
+}
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--color-dark-gray);
+  border-radius: 8px;
+}
+
+.session-info-text {
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+}
+
+.session-cycle-info {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
 }

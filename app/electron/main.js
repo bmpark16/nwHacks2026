@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const sessionStorage = require('./storage/sessionStorage');
@@ -30,8 +30,7 @@ function createWindow() {
   if (isDev) {
     // In development, load from Vite dev server
     win.loadURL('http://localhost:5173');
-    // Open DevTools in development
-    win.webContents.openDevTools();
+    // DevTools can be opened manually with F12 or Ctrl+Shift+I
   } else {
     // In production, load from built files
     win.loadFile(path.join(__dirname, '../ui/dist/index.html'));
@@ -215,6 +214,21 @@ ipcMain.handle('arduino:trigger', async (event, action) => {
     console.error('Error triggering Arduino:', error);
     return { success: false, error: error.message };
   }
+});
+
+// Notification handler
+ipcMain.handle('notification:show', async (event, title, body) => {
+  // Check if notification permission is granted
+  if (Notification.isSupported()) {
+    const notification = new Notification({
+      title: title || 'Wet Reminder',
+      body: body,
+      silent: false
+    });
+    notification.show();
+    return { success: true };
+  }
+  return { success: false, error: 'Notifications not supported' };
 });
 
 // Cleanup on app quit

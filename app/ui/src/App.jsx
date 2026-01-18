@@ -6,11 +6,14 @@ import SessionEvents from './components/SessionEvents';
 import './App.css';
 
 function App() {
-  const [mode, setMode] = useState('pomodoro'); // 'pomodoro' or 'manual'
+  const [mode, setMode] = useState('pomodoro'); // 'pomodoro' or 'singleSession'
+  const [timerState, setTimerState] = useState('off'); // 'off' | 'focus' | 'break'
   const [isActive, setIsActive] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [focusTime, setFocusTime] = useState(30 * 60); // 30 minutes default
   const [breakTime, setBreakTime] = useState(5 * 60); // 5 minutes default
+  const [pomodoroCycles, setPomodoroCycles] = useState(3); // number or 'infinite'
+  const [currentCycle, setCurrentCycle] = useState(1);
   const [selectedCameraId, setSelectedCameraId] = useState(null);
   const [showCameraSelector, setShowCameraSelector] = useState(false);
   const [sessions, setSessions] = useState([]);
@@ -19,6 +22,7 @@ function App() {
   const [pythonStarted, setPythonStarted] = useState(false);
   const [probabilityThreshold, setProbabilityThreshold] = useState(0.8);
   const lastEventTimeRef = useRef({});
+  const isMonitoringRef = useRef(false); // Track if camera should be monitoring
 
   // Load sessions and settings on mount
   useEffect(() => {
@@ -38,18 +42,78 @@ function App() {
     };
   }, []);
 
-  const handleTimerComplete = async () => {
-    if (mode === 'pomodoro') {
-      // For now, just end the session. Break mode can be added later
-      await handleStop();
-    } else {
-      await handleStop();
+  const handleStop = async () => {
+    if (currentSession) {
+      const completedSession = {
+        ...currentSession,
+        endTime: new Date().toISOString(),
+        events: sessionEvents
+      };
+      
+      // Save to storage
+      if (window.electronAPI) {
+        await window.electronAPI.saveSession(completedSession);
+      }
+      
+      setSessions(prev => [completedSession, ...prev]);
+      setCurrentSession(null);
     }
+    setTimerState('off');
+    setIsActive(false);
+    setTimeRemaining(0);
+    setSessionEvents([]);
+    setCurrentCycle(1);
+    lastEventTimeRef.current = {};
+    isMonitoringRef.current = false;
+    
+    // Reload sessions to get updated list
+    await loadSessions();
+    
+    // Show notification
+    await showNotification('Wet Reminder', 'Session ended');
   };
 
   // Timer countdown effect
   useEffect(() => {
     let interval = null;
+    
+    const handleTimerComplete = async () => {
+      if (timerState === 'focus') {
+        if (mode === 'pomodoro') {
+          // Transition to break
+          setTimerState('break');
+          setTimeRemaining(breakTime);
+          isMonitoringRef.current = false; // Pause monitoring during break
+          await showNotification('Wet Reminder', `Focus complete! Break time - ${Math.floor(breakTime / 60)} min`);
+        } else {
+          // Single session complete
+          await handleStop();
+          await showNotification('Wet Reminder', 'Session ended');
+        }
+      } else if (timerState === 'break') {
+        // Break complete, check if more cycles
+        const cyclesRemaining = pomodoroCycles === 'infinite' ? true : currentCycle < pomodoroCycles;
+        
+        if (cyclesRemaining) {
+          // Start next cycle
+          const nextCycle = currentCycle + 1;
+          setCurrentCycle(nextCycle);
+          setTimerState('focus');
+          setTimeRemaining(focusTime);
+          isMonitoringRef.current = true; // Resume monitoring
+          
+          const cyclesText = pomodoroCycles === 'infinite' 
+            ? 'Infinite' 
+            : `${pomodoroCycles - nextCycle + 1} cycles left`;
+          await showNotification('Wet Reminder', `Break over! Back to focus - Cycle ${nextCycle} (${cyclesText})`);
+        } else {
+          // All cycles complete
+          await handleStop();
+          await showNotification('Wet Reminder', 'All Pomodoro cycles complete!');
+        }
+      }
+    };
+
     if (isActive && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining(prev => {
@@ -66,7 +130,7 @@ function App() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeRemaining, mode]);
+  }, [isActive, timeRemaining, timerState, mode, currentCycle, pomodoroCycles, focusTime, breakTime]);
 
   const loadSessions = async () => {
     if (window.electronAPI) {
@@ -112,9 +176,19 @@ function App() {
     return pythonStarted;
   };
 
+  const showNotification = async (title, body) => {
+    if (window.electronAPI) {
+      try {
+        await window.electronAPI.showNotification(title, body);
+      } catch (error) {
+        console.error('Error showing notification:', error);
+      }
+    }
+  };
+
   const handleModeToggle = () => {
     if (!isActive) {
-      setMode(prev => prev === 'pomodoro' ? 'manual' : 'pomodoro');
+      setMode(prev => prev === 'pomodoro' ? 'singleSession' : 'pomodoro');
     }
   };
 
@@ -133,20 +207,25 @@ function App() {
       }
     }
 
+    const sessionDuration = mode === 'singleSession' ? focusTime : focusTime;
     const newSession = {
       id: `session-${Date.now()}`,
       startTime: new Date().toISOString(),
       mode: mode,
       focusDuration: focusTime,
       breakDuration: breakTime,
+      pomodoroCycles: mode === 'pomodoro' ? pomodoroCycles : null,
       events: []
     };
 
     setCurrentSession(newSession);
+    setTimerState('focus');
     setIsActive(true);
-    setTimeRemaining(focusTime);
+    setTimeRemaining(sessionDuration);
+    setCurrentCycle(1);
     setSessionEvents([]);
     lastEventTimeRef.current = {};
+    isMonitoringRef.current = true; // Start monitoring
 
     // Save session to storage
     if (window.electronAPI) {
@@ -156,33 +235,13 @@ function App() {
         console.error('Error saving session:', error);
       }
     }
-  };
 
-  const handleStop = async () => {
-    if (currentSession) {
-      const completedSession = {
-        ...currentSession,
-        endTime: new Date().toISOString(),
-        events: sessionEvents
-      };
-      
-      // Save to storage
-      if (window.electronAPI) {
-        await window.electronAPI.saveSession(completedSession);
-      }
-      
-      setSessions(prev => [completedSession, ...prev]);
-      setCurrentSession(null);
-    }
-    setIsActive(false);
-    setTimeRemaining(0);
-    setSessionEvents([]);
-    lastEventTimeRef.current = {};
-    
-    // Reload sessions to get updated list
-    await loadSessions();
+    // Show notification
+    const durationText = mode === 'singleSession' 
+      ? `${Math.floor(sessionDuration / 3600)} hours`
+      : `${Math.floor(sessionDuration / 60)} min`;
+    await showNotification('Wet Reminder', `Focus session started - ${durationText}`);
   };
-
 
   const handleCameraSelect = async (cameraId) => {
     setSelectedCameraId(cameraId);
@@ -195,7 +254,8 @@ function App() {
   };
 
   const handleFrameCapture = async (frameData) => {
-    if (!isActive || !pythonStarted || !window.electronAPI || !currentSession) return;
+    // Only monitor during focus state
+    if (!isActive || !isMonitoringRef.current || timerState !== 'focus' || !pythonStarted || !window.electronAPI || !currentSession) return;
 
     try {
       const result = await window.electronAPI.sendFrame(frameData);
@@ -257,6 +317,20 @@ function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getSessionInfo = () => {
+    if (timerState === 'off') return null;
+    
+    if (mode === 'pomodoro') {
+      const focusMin = Math.floor(focusTime / 60);
+      const breakMin = Math.floor(breakTime / 60);
+      const cyclesText = pomodoroCycles === 'infinite' ? 'Infinite' : `${pomodoroCycles} cycles`;
+      return `Pomodoro: ${focusMin} min focus | ${breakMin} min break | ${cyclesText}`;
+    } else {
+      const hours = Math.floor(focusTime / 3600);
+      return `Single Session: ${hours} hours`;
+    }
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -271,14 +345,19 @@ function App() {
           <Timer
             timeRemaining={timeRemaining}
             isActive={isActive}
+            timerState={timerState}
             mode={mode}
             onModeToggle={handleModeToggle}
             onStart={handleStart}
             onStop={handleStop}
             focusTime={focusTime}
             breakTime={breakTime}
+            pomodoroCycles={pomodoroCycles}
+            currentCycle={currentCycle}
+            sessionInfo={getSessionInfo()}
             onFocusTimeChange={setFocusTime}
             onBreakTimeChange={setBreakTime}
+            onCyclesChange={setPomodoroCycles}
           />
 
           {!isActive && (
@@ -293,11 +372,16 @@ function App() {
           {isActive && (
             <>
               <CameraPreview
-                isActive={isActive}
+                isActive={isMonitoringRef.current && timerState === 'focus'}
                 cameraId={selectedCameraId}
                 onFrameCapture={handleFrameCapture}
               />
-              {!pythonStarted && (
+              {timerState === 'break' && (
+                <div className="break-indicator secondary-text" style={{ textAlign: 'center', padding: '8px' }}>
+                  Break time - Monitoring paused
+                </div>
+              )}
+              {timerState === 'focus' && !pythonStarted && (
                 <div className="python-warning secondary-text" style={{ textAlign: 'center', padding: '8px' }}>
                   Python bridge not running - events will not be detected
                 </div>

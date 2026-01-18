@@ -22,4 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Arduino
   triggerArduino: (action) => ipcRenderer.invoke('arduino:trigger', action),
+
+  // Notifications
+  showNotification: (title, body) => ipcRenderer.invoke('notification:show', title, body),
 });
