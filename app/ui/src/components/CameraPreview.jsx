@@ -1,6 +1,90 @@
 import { useEffect, useRef } from 'react';
 import './CameraPreview.css';
 
+// Helper function to draw MediaPipe landmarks
+const drawLandmarks = (ctx, landmarks, width, height) => {
+  // Draw pose landmarks (body skeleton)
+  if (landmarks.pose) {
+    ctx.strokeStyle = '#00FF00';
+    ctx.lineWidth = 2;
+    ctx.fillStyle = '#00FF00';
+
+    // Draw pose connections (simplified - main body lines)
+    const connections = [
+      [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], // Arms
+      [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28] // Torso and legs
+    ];
+
+    connections.forEach(([start, end]) => {
+      const startPoint = landmarks.pose[start];
+      const endPoint = landmarks.pose[end];
+      if (startPoint && endPoint && startPoint[3] > 0.5 && endPoint[3] > 0.5) {
+        ctx.beginPath();
+        ctx.moveTo(startPoint[0] * width, startPoint[1] * height);
+        ctx.lineTo(endPoint[0] * width, endPoint[1] * height);
+        ctx.stroke();
+      }
+    });
+
+    // Draw pose points
+    landmarks.pose.forEach((point) => {
+      if (point[3] > 0.5) { // visibility threshold
+        ctx.beginPath();
+        ctx.arc(point[0] * width, point[1] * height, 4, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    });
+  }
+
+  // Draw face landmarks
+  if (landmarks.face) {
+    ctx.fillStyle = '#FF00FF';
+    landmarks.face.slice(0, 20).forEach((point) => { // Draw only outline points
+      ctx.beginPath();
+      ctx.arc(point[0] * width, point[1] * height, 1, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+  }
+
+  // Draw hand landmarks
+  const drawHand = (hand, color) => {
+    if (!hand) return;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+
+    // Hand connections
+    const handConnections = [
+      [0,1],[1,2],[2,3],[3,4], // Thumb
+      [0,5],[5,6],[6,7],[7,8], // Index
+      [0,9],[9,10],[10,11],[11,12], // Middle
+      [0,13],[13,14],[14,15],[15,16], // Ring
+      [0,17],[17,18],[18,19],[19,20] // Pinky
+    ];
+
+    handConnections.forEach(([start, end]) => {
+      const startPoint = hand[start];
+      const endPoint = hand[end];
+      if (startPoint && endPoint) {
+        ctx.beginPath();
+        ctx.moveTo(startPoint[0] * width, startPoint[1] * height);
+        ctx.lineTo(endPoint[0] * width, endPoint[1] * height);
+        ctx.stroke();
+      }
+    });
+
+    // Draw hand points
+    hand.forEach((point) => {
+      ctx.beginPath();
+      ctx.arc(point[0] * width, point[1] * height, 3, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+  };
+
+  drawHand(landmarks.left_hand, '#00FFFF');
+  drawHand(landmarks.right_hand, '#FFFF00');
+};
+
 function CameraPreview({ isActive, cameraId, onFrameCapture, currentPrediction }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -63,6 +147,7 @@ function CameraPreview({ isActive, cameraId, onFrameCapture, currentPrediction }
     // Convert to base64 and send to parent
     const frameData = canvas.toDataURL('image/jpeg', 0.8);
     if (onFrameCapture) {
+      console.log('Capturing frame, size:', frameData.length);
       onFrameCapture(frameData);
     }
   };
@@ -103,6 +188,13 @@ function CameraPreview({ isActive, cameraId, onFrameCapture, currentPrediction }
 
       // Clear previous overlay
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      console.log('Drawing overlay, currentPrediction:', currentPrediction);
+
+      // Draw MediaPipe landmarks if available
+      if (currentPrediction && currentPrediction.landmarks) {
+        drawLandmarks(ctx, currentPrediction.landmarks, canvas.width, canvas.height);
+      }
 
       if (currentPrediction && currentPrediction.detected) {
         const { action, confidence, probabilities } = currentPrediction;
@@ -153,7 +245,7 @@ function CameraPreview({ isActive, cameraId, onFrameCapture, currentPrediction }
 
         ctx.font = '20px Arial';
         ctx.fillStyle = '#64748b';
-        ctx.fillText('Status: Monitoring...', 20, 35);
+        ctx.fillText('Status: Monitoring... (model needs 15s to warm up)', 20, 35);
       }
 
       animationFrameRef.current = requestAnimationFrame(drawOverlay);

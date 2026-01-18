@@ -2,6 +2,7 @@ import os
 import sys
 import base64
 import numpy as np
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model_processor import ModelProcessor
@@ -10,6 +11,10 @@ from config import DEFAULT_PROBABILITY_THRESHOLD, SERVER_PORT, SEQUENCE_LENGTH, 
 
 app = Flask(__name__)
 CORS(app)
+
+# Disable Flask/Werkzeug logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 # Initialize components
 processor = None
@@ -91,6 +96,8 @@ def process_frame():
                     max_prob = float(np.max(res))
                     predicted_action = ACTIONS[int(np.argmax(res))]
 
+                    print(f"Prediction: {predicted_action} ({max_prob:.2f}) - Sequence length: {len(processor.sequence)}")
+
                     if max_prob > threshold:
                         return jsonify({
                             'success': True,
@@ -102,6 +109,10 @@ def process_frame():
                     else:
                         return jsonify({'success': True, 'detected': False})
 
+                # Show progress every 30 frames
+                if len(processor.sequence) % 30 == 0:
+                    print(f"Building sequence: {len(processor.sequence)}/{SEQUENCE_LENGTH} frames")
+
                 return jsonify({'success': True, 'detected': False})
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
@@ -112,22 +123,24 @@ def process_frame():
         if result:
             # Trigger Arduino servo if doomscrolling detected
             arduino_triggered = False
-            if arduino and result['action'].lower() == 'doomscrolling':
+            if arduino and result.get('action') and result['action'].lower() == 'doomscrolling':
                 arduino_triggered = arduino.trigger('doomscrolling')
                 print(f"Doomscrolling detected! Triggering servo sweep.")
 
             return jsonify({
                 'success': True,
-                'detected': True,
-                'action': result['action'],
-                'confidence': result['confidence'],
-                'probabilities': result['probabilities'],
+                'detected': result.get('action') is not None,
+                'action': result.get('action'),
+                'confidence': result.get('confidence'),
+                'probabilities': result.get('probabilities', {}),
+                'landmarks': result.get('landmarks', {}),
                 'arduino_triggered': arduino_triggered
             })
         else:
             return jsonify({
                 'success': True,
-                'detected': False
+                'detected': False,
+                'landmarks': {}
             })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

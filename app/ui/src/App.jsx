@@ -258,12 +258,15 @@ function App() {
   const handleFrameCapture = async (frameData) => {
     // Only monitor during focus state
     if (!isActive || !isMonitoringRef.current || timerState !== 'focus' || !pythonStarted || !window.electronAPI || !currentSession) {
+      console.log('Frame skipped:', { isActive, isMonitoring: isMonitoringRef.current, timerState, pythonStarted, hasAPI: !!window.electronAPI, hasSession: !!currentSession });
       setCurrentPrediction(null);
       return;
     }
 
+    console.log('Sending frame to Python...');
     try {
       const result = await window.electronAPI.sendFrame(frameData);
+      console.log('Python response:', result);
 
       // Update current prediction for live display
       if (result && result.success) {
@@ -271,7 +274,8 @@ function App() {
           detected: result.detected,
           action: result.action,
           confidence: result.confidence,
-          probabilities: result.probabilities
+          probabilities: result.probabilities,
+          landmarks: result.landmarks || {}
         });
       } else {
         setCurrentPrediction(null);

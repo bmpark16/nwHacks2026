@@ -26,4 +26,4 @@ ARDUINO_BAUDRATE = 9600
 
 # Server configuration
 SERVER_HOST = 'localhost'
-SERVER_PORT = 5000
+SERVER_PORT = 5001

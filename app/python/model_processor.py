@@ -3,19 +3,10 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import cv2
-# Temporarily disable MediaPipe import/usage for testing on systems
-# where MediaPipe isn't installed or has an incompatible API.
-# To re-enable, restore the import below and the mp_holistic/mp_drawing
-# assignments.
-# import mediapipe as mp
-# mp_holistic = mp.solutions.holistic  # Holistic model
-# mp_drawing = mp.solutions.drawing_utils  # Drawing utilities
+import mediapipe as mp
 
-mp = None
-
-# Fallbacks so the rest of the module can import and run without MediaPipe.
-mp_holistic = None
-mp_drawing = None
+mp_holistic = mp.solutions.holistic  # Holistic model
+mp_drawing = mp.solutions.drawing_utils  # Drawing utilities
 
 from config import (
     MODEL_PATH, ACTIONS, SEQUENCE_LENGTH, KEYPOINT_DIM,
@@ -37,6 +28,12 @@ class ModelProcessor:
             if os.path.exists(MODEL_PATH):
                 self.model = keras.models.load_model(MODEL_PATH)
                 print(f"Model loaded from {MODEL_PATH}")
+
+                # Log model input/output shape
+                if self.model:
+                    print(f"Model expects input shape: {self.model.input_shape}")
+                    print(f"Model output shape: {self.model.output_shape}")
+                    print(f"Expected: (batch_size, {SEQUENCE_LENGTH}, {KEYPOINT_DIM})")
             else:
                 print(f"Warning: Model file not found at {MODEL_PATH}")
         except Exception as e:
@@ -162,7 +159,37 @@ class ModelProcessor:
                       for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
         rh = np.array([[res.x, res.y, res.z]
                       for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+
+        # Log what was detected
+        detected = []
+        if results.pose_landmarks: detected.append("pose")
+        if results.face_landmarks: detected.append("face")
+        if results.left_hand_landmarks: detected.append("left_hand")
+        if results.right_hand_landmarks: detected.append("right_hand")
+        if len(detected) > 0:
+            print(f"MediaPipe detected: {', '.join(detected)}")
+        else:
+            print("MediaPipe detected: NOTHING (all zeros)")
+
         return np.concatenate([pose, face, lh, rh])
+
+    def _serialize_landmarks(self, results):
+        """Convert MediaPipe landmarks to JSON-serializable format"""
+        landmarks = {}
+
+        if results.pose_landmarks:
+            landmarks['pose'] = [[lm.x, lm.y, lm.z, lm.visibility] for lm in results.pose_landmarks.landmark]
+
+        if results.face_landmarks:
+            landmarks['face'] = [[lm.x, lm.y, lm.z] for lm in results.face_landmarks.landmark]
+
+        if results.left_hand_landmarks:
+            landmarks['left_hand'] = [[lm.x, lm.y, lm.z] for lm in results.left_hand_landmarks.landmark]
+
+        if results.right_hand_landmarks:
+            landmarks['right_hand'] = [[lm.x, lm.y, lm.z] for lm in results.right_hand_landmarks.landmark]
+
+        return landmarks
 
     def process_frame(self, frame_data, threshold=0.8):
         """Process a single frame and return prediction"""
@@ -199,26 +226,52 @@ class ModelProcessor:
             # Extract keypoints
             keypoints = self.extract_keypoints(results)
 
+            # Log keypoint shape
+            print(f"Extracted keypoints shape: {keypoints.shape} (expected: ({KEYPOINT_DIM},))")
+
             # Add to sequence
             self.sequence.append(keypoints)
             self.sequence = self.sequence[-SEQUENCE_LENGTH:]
 
             # Predict if we have enough frames
             if len(self.sequence) == SEQUENCE_LENGTH:
-                res = self.model.predict(np.expand_dims(
-                    self.sequence, axis=0), verbose=0)[0]
+                input_array = np.expand_dims(self.sequence, axis=0)
+
+                # Log input shape
+                print(f"Input shape: {input_array.shape} | Expected: (1, {SEQUENCE_LENGTH}, {KEYPOINT_DIM})")
+
+                res = self.model.predict(input_array, verbose=0)[0]
 
                 max_prob = np.max(res)
                 predicted_action = ACTIONS[np.argmax(res)]
+
+                # Log detailed probabilities
+                probs_str = ", ".join([f"{ACTIONS[i]}: {res[i]:.3f}" for i in range(len(ACTIONS))])
+                print(f"Output shape: {res.shape} | Output: {probs_str} | Predicted: {predicted_action} ({max_prob:.3f})")
 
                 if max_prob > threshold:
                     return {
                         'action': predicted_action,
                         'confidence': float(max_prob),
-                        'probabilities': {ACTIONS[i]: float(res[i]) for i in range(len(ACTIONS))}
+                        'probabilities': {ACTIONS[i]: float(res[i]) for i in range(len(ACTIONS))},
+                        'landmarks': self._serialize_landmarks(results)
+                    }
+                else:
+                    # Still return landmarks even if below threshold
+                    return {
+                        'action': None,
+                        'confidence': float(max_prob),
+                        'probabilities': {ACTIONS[i]: float(res[i]) for i in range(len(ACTIONS))},
+                        'landmarks': self._serialize_landmarks(results)
                     }
 
-            return None
+            # Return landmarks even without full sequence
+            return {
+                'action': None,
+                'confidence': 0.0,
+                'probabilities': {},
+                'landmarks': self._serialize_landmarks(results)
+            }
         except Exception as e:
             print(f"Error processing frame: {e}")
             return None

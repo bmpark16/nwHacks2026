@@ -8,7 +8,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 let mainWindow = null;
 let pythonProcess = null;
-let pythonPort = 5000;
+let pythonPort = 5001;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -71,30 +71,23 @@ ipcMain.handle('python:start', async () => {
   try {
     const pythonPath = path.join(__dirname, '../python/bridge_service.py');
 
-    // Try to find python3 with full path
-    let pythonCmd = 'python3';
-    try {
-      const { execSync } = require('child_process');
-      // Get full path to python3 to ensure we use the right environment
-      const whichResult = execSync('which python3', { encoding: 'utf-8' }).trim();
-      if (whichResult) {
-        pythonCmd = whichResult;
-        console.log(`Using Python: ${pythonCmd}`);
-      }
-    } catch {
-      // Fallback to 'python' if python3 not found
-      try {
-        execSync('python --version', { stdio: 'ignore' });
-        pythonCmd = 'python';
-      } catch {
-        console.error('No Python installation found');
-      }
+    // Use the venv Python directly
+    const venvPython = path.join(__dirname, '../../.venv/bin/python3');
+    let pythonCmd = venvPython;
+
+    // Check if venv Python exists, otherwise fall back to system python
+    const fs = require('fs');
+    if (!fs.existsSync(venvPython)) {
+      console.warn('Venv Python not found, falling back to system python3');
+      pythonCmd = 'python3';
     }
+
+    console.log(`Using Python: ${pythonCmd}`);
 
     pythonProcess = spawn(pythonCmd, [pythonPath], {
       cwd: path.join(__dirname, '../python'),
       stdio: ['pipe', 'pipe', 'pipe'],
-      shell: true  // Use shell on all platforms to resolve python path
+      env: { ...process.env, PYTHONUNBUFFERED: '1' }  // Disable Python output buffering
     });
 
     pythonProcess.stdout.on('data', (data) => {
@@ -141,19 +134,21 @@ ipcMain.handle('python:stop', async () => {
 
 ipcMain.handle('python:send-frame', async (event, frameData) => {
   if (!pythonProcess) {
+    console.log('Frame rejected: Python process not running');
     return { success: false, error: 'Python process not running' };
   }
 
   try {
     const https = require('http');
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',  // Use IPv4 directly instead of 'localhost'
       port: pythonPort,
       path: '/process_frame',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      }
+      },
+      timeout: 5000
     };
 
     return new Promise((resolve) => {
@@ -167,13 +162,21 @@ ipcMain.handle('python:send-frame', async (event, frameData) => {
             const result = JSON.parse(data);
             resolve(result);
           } catch (e) {
+            console.error('Invalid JSON response from Python:', data);
             resolve({ success: false, error: 'Invalid response from Python' });
           }
         });
       });
 
       req.on('error', (error) => {
+        console.error('Request error:', error.message);
         resolve({ success: false, error: error.message });
+      });
+
+      req.on('timeout', () => {
+        console.error('Request timeout');
+        req.destroy();
+        resolve({ success: false, error: 'Request timeout' });
       });
 
       req.write(JSON.stringify({ frame: frameData }));
@@ -189,7 +192,7 @@ ipcMain.handle('arduino:trigger', async (event, action) => {
   try {
     const https = require('http');
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',  // Use IPv4 directly instead of 'localhost'
       port: pythonPort,
       path: '/trigger_arduino',
       method: 'POST',
