@@ -35,18 +35,43 @@ function CameraSelector({ isOpen, onClose, onSelect, selectedCameraId }) {
     // Stop previous stream
     if (previewStream) {
       previewStream.getTracks().forEach(track => track.stop());
+      setPreviewStream(null);
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: deviceId } }
+        video: { 
+          deviceId: { exact: deviceId },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
+      
       setPreviewStream(stream);
+      
+      // Wait for video element to be ready, then set stream and play
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Explicitly call play() - required on Windows
+        try {
+          await videoRef.current.play();
+        } catch (playError) {
+          console.error('Error playing video:', playError);
+          // On Windows, sometimes we need to wait a bit
+          setTimeout(async () => {
+            if (videoRef.current && videoRef.current.srcObject === stream) {
+              try {
+                await videoRef.current.play();
+              } catch (retryError) {
+                console.error('Retry play failed:', retryError);
+              }
+            }
+          }, 100);
+        }
       }
     } catch (error) {
       console.error('Error starting preview:', error);
+      setPreviewStream(null);
     }
   };
 
@@ -85,15 +110,15 @@ function CameraSelector({ isOpen, onClose, onSelect, selectedCameraId }) {
         
         <div className="camera-selector-content">
           <div className="camera-preview-area">
-            {previewStream ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="camera-preview-video"
-              />
-            ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="camera-preview-video"
+              style={{ display: previewStream ? 'block' : 'none' }}
+            />
+            {!previewStream && (
               <div className="camera-preview-placeholder">
                 <span>PREVIEW</span>
               </div>

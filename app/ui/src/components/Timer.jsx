@@ -50,8 +50,12 @@ function Timer({
   ];
 
   const singleSessionPresets = [
-    { label: '2 hours', value: 2 * 60 * 60 },
-    { label: '4 hours', value: 4 * 60 * 60 }
+    { label: '15 min', value: 15 * 60 },
+    { label: '30 min', value: 30 * 60 },
+    { label: '45 min', value: 45 * 60 },
+    { label: '1 hr', value: 60 * 60 },
+    { label: '2 hr', value: 2 * 60 * 60 },
+    { label: '4 hr', value: 4 * 60 * 60 }
   ];
 
   const cycleOptions = [
@@ -108,8 +112,8 @@ function Timer({
               Start
             </button>
             <button className="timer-button mode-button" onClick={onModeToggle}>
-              {mode === 'pomodoro' ? 'Single Session' : 'Pomodoro'}
-              {mode === 'pomodoro' && <span className="swap-icon">⇄</span>}
+              {mode === 'pomodoro' ? 'Pomodoro' : 'Single Session'}
+              <span className="swap-icon">⇄</span>
             </button>
           </>
         )}
