@@ -58,6 +58,7 @@
 
 .start-button {
   background: var(--color-green);
+  justify-content: center;
   flex: 1;
   max-width: 200px;
 }
@@ -70,6 +71,7 @@
 
 .mode-button {
   background: var(--color-light-gray);
+  justify-content: center;
   flex: 1;
   max-width: 200px;
 }
@@ -85,6 +87,7 @@
 
 .stop-button {
   background: #441623;
+  justify-content: center;
   width: 100%;
   max-width: 300px;
 }
@@ -110,8 +113,10 @@
 
 .timer-presets {
   display: flex;
+  align-items: center;
   flex-direction: column;
   gap: 20px;
+  margin-bottom: 30px;
 }
 
 .preset-group {

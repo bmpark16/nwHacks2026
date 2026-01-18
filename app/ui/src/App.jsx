@@ -237,9 +237,7 @@ function App() {
     }
 
     // Show notification
-    const durationText = mode === 'singleSession' 
-      ? `${Math.floor(sessionDuration / 3600)} hours`
-      : `${Math.floor(sessionDuration / 60)} min`;
+    const durationText = `${Math.floor(sessionDuration / 60)} min`;
     await showNotification('Wet Reminder', `Focus session started - ${durationText}`);
   };
 
