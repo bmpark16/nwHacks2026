@@ -13,10 +13,12 @@ function Timer({
   breakTime,
   pomodoroCycles,
   currentCycle,
+  sessionName,
   sessionInfo,
   onFocusTimeChange,
   onBreakTimeChange,
-  onCyclesChange
+  onCyclesChange,
+  onSessionNameChange
 }) {
   const [showStopConfirm, setShowStopConfirm] = useState(false);
 
@@ -121,6 +123,17 @@ function Timer({
 
       {!isActive && (
         <div className="timer-presets">
+          <div className="preset-group">
+            <div className="preset-label secondary-text">Session Name</div>
+            <input
+              className="session-name-input"
+              type="text"
+              placeholder="e.g. Morning focus"
+              value={sessionName}
+              onChange={(e) => onSessionNameChange(e.target.value)}
+              maxLength={60}
+            />
+          </div>
           {mode === 'pomodoro' ? (
             <>
               <div className="preset-group">
@@ -187,6 +200,9 @@ function Timer({
 
       {isActive && sessionInfo && (
         <div className="session-info">
+          {sessionName && (
+            <div className="session-name-text secondary-text">{sessionName}</div>
+          )}
           <div className="session-info-text secondary-text">{sessionInfo}</div>
           {mode === 'pomodoro' && (
             <div className="session-cycle-info secondary-text">

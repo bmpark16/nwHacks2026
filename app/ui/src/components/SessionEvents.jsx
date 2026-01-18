@@ -37,7 +37,7 @@ function SessionEvents({ sessions, currentSession, isSessionActive }) {
   const displaySession = getDisplaySession();
   const events = displaySession?.events || [];
 
-  const formatSessionLabel = (session) => {
+  const formatSessionTime = (session) => {
     if (!session) return '';
     const date = new Date(session.startTime);
     const options = { 
@@ -51,6 +51,12 @@ function SessionEvents({ sessions, currentSession, isSessionActive }) {
     return date.toLocaleString('en-US', options);
   };
 
+  const formatSessionLabel = (session) => {
+    if (!session) return '';
+    const timeLabel = formatSessionTime(session);
+    return session.name ? `${session.name} - ${timeLabel}` : `Session Events - ${timeLabel}`;
+  };
+
   return (
     <div className="session-events-container">
       <div className="session-selector">
@@ -62,12 +68,14 @@ function SessionEvents({ sessions, currentSession, isSessionActive }) {
         >
           {isSessionActive && currentSession && (
             <option value="current">
-              Session Events - Current
+              {currentSession.name
+                ? `${currentSession.name} - ${formatSessionTime(currentSession)}`
+                : 'Session Events - Current'}
             </option>
           )}
           {sessions.map(session => (
             <option key={session.id} value={session.id}>
-              Session Events - {formatSessionLabel(session)}
+              {formatSessionLabel(session)}
             </option>
           ))}
           {sessions.length === 0 && !isSessionActive && (

@@ -14,6 +14,7 @@ function App() {
   const [breakTime, setBreakTime] = useState(5 * 60); // 5 minutes default
   const [pomodoroCycles, setPomodoroCycles] = useState(3); // number or 'infinite'
   const [currentCycle, setCurrentCycle] = useState(1);
+  const [sessionName, setSessionName] = useState('');
   const [selectedCameraId, setSelectedCameraId] = useState(null);
   const [showCameraSelector, setShowCameraSelector] = useState(false);
   const [sessions, setSessions] = useState([]);
@@ -63,6 +64,7 @@ function App() {
     setTimeRemaining(0);
     setSessionEvents([]);
     setCurrentCycle(1);
+    setSessionName('');
     lastEventTimeRef.current = {};
     isMonitoringRef.current = false;
     
@@ -210,6 +212,7 @@ function App() {
     const sessionDuration = mode === 'singleSession' ? focusTime : focusTime;
     const newSession = {
       id: `session-${Date.now()}`,
+      name: sessionName.trim() || null,
       startTime: new Date().toISOString(),
       mode: mode,
       focusDuration: focusTime,
@@ -352,10 +355,12 @@ function App() {
             breakTime={breakTime}
             pomodoroCycles={pomodoroCycles}
             currentCycle={currentCycle}
+            sessionName={sessionName}
             sessionInfo={getSessionInfo()}
             onFocusTimeChange={setFocusTime}
             onBreakTimeChange={setBreakTime}
             onCyclesChange={setPomodoroCycles}
+            onSessionNameChange={setSessionName}
           />
 
           {!isActive && (
