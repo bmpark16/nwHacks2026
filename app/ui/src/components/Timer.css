@@ -147,6 +147,9 @@
   border-radius: 6px;
   color: var(--color-white);
   width: 100%;
+  max-width: 460px;
+  align-self: flex-start;
+  margin-left: -12px;
 }
 
 .session-name-input::placeholder {

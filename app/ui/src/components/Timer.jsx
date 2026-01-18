@@ -123,7 +123,7 @@ function Timer({
 
       {!isActive && (
         <div className="timer-presets">
-          <div className="preset-group">
+          <div className="preset-group session-name-group">
             <div className="preset-label secondary-text">Session Name</div>
             <input
               className="session-name-input"
@@ -131,7 +131,7 @@ function Timer({
               placeholder="e.g. Morning focus"
               value={sessionName}
               onChange={(e) => onSessionNameChange(e.target.value)}
-              maxLength={60}
+              maxLength={150}
             />
           </div>
           {mode === 'pomodoro' ? (
