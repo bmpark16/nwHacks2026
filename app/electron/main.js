@@ -71,19 +71,30 @@ ipcMain.handle('python:start', async () => {
   try {
     const pythonPath = path.join(__dirname, '../python/bridge_service.py');
 
-    // Try 'python3' first, fallback to 'python'
+    // Try to find python3 with full path
     let pythonCmd = 'python3';
     try {
       const { execSync } = require('child_process');
-      execSync('python3 --version', { stdio: 'ignore' });
+      // Get full path to python3 to ensure we use the right environment
+      const whichResult = execSync('which python3', { encoding: 'utf-8' }).trim();
+      if (whichResult) {
+        pythonCmd = whichResult;
+        console.log(`Using Python: ${pythonCmd}`);
+      }
     } catch {
-      pythonCmd = 'python';
+      // Fallback to 'python' if python3 not found
+      try {
+        execSync('python --version', { stdio: 'ignore' });
+        pythonCmd = 'python';
+      } catch {
+        console.error('No Python installation found');
+      }
     }
 
     pythonProcess = spawn(pythonCmd, [pythonPath], {
       cwd: path.join(__dirname, '../python'),
       stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32'
+      shell: true  // Use shell on all platforms to resolve python path
     });
 
     pythonProcess.stdout.on('data', (data) => {

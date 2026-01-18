@@ -44,21 +44,33 @@ class ArduinoController:
             self.connection.close()
             self.connection = None
 
-    def trigger(self, action):
-        """Send trigger command to Arduino"""
+    def send_command(self, command):
+        """Send command to Arduino"""
         if not self.connection or not self.connection.is_open:
             if not self.connect():
                 return False
 
         try:
-            # Send action as string (Arduino can parse this)
-            command = f"{action}\n"
-            self.connection.write(command.encode())
-            print(f"Triggered Arduino with action: {action}")
+            # Send command as string
+            cmd = f"{command}\n"
+            self.connection.write(cmd.encode())
+            print(f"Sent command to Arduino: {command}")
             return True
         except Exception as e:
-            print(f"Error triggering Arduino: {e}")
+            print(f"Error sending command to Arduino: {e}")
             return False
+
+    def trigger(self, action):
+        """Send trigger command to Arduino (triggers single servo sweep)"""
+        return self.send_command("TRIGGER")
+
+    def start_auto_mode(self):
+        """Start continuous servo sweeping"""
+        return self.send_command("START")
+
+    def stop_auto_mode(self):
+        """Stop continuous servo sweeping and reset position"""
+        return self.send_command("STOP")
 
     def __del__(self):
         self.disconnect()

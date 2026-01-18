@@ -22,6 +22,7 @@ function App() {
   const [sessionEvents, setSessionEvents] = useState([]);
   const [pythonStarted, setPythonStarted] = useState(false);
   const [probabilityThreshold, setProbabilityThreshold] = useState(0.8);
+  const [currentPrediction, setCurrentPrediction] = useState(null);
   const lastEventTimeRef = useRef({});
   const isMonitoringRef = useRef(false); // Track if camera should be monitoring
 
@@ -256,15 +257,30 @@ function App() {
 
   const handleFrameCapture = async (frameData) => {
     // Only monitor during focus state
-    if (!isActive || !isMonitoringRef.current || timerState !== 'focus' || !pythonStarted || !window.electronAPI || !currentSession) return;
+    if (!isActive || !isMonitoringRef.current || timerState !== 'focus' || !pythonStarted || !window.electronAPI || !currentSession) {
+      setCurrentPrediction(null);
+      return;
+    }
 
     try {
       const result = await window.electronAPI.sendFrame(frameData);
-      
+
+      // Update current prediction for live display
+      if (result && result.success) {
+        setCurrentPrediction({
+          detected: result.detected,
+          action: result.action,
+          confidence: result.confidence,
+          probabilities: result.probabilities
+        });
+      } else {
+        setCurrentPrediction(null);
+      }
+
       if (result && result.success && result.detected) {
         const action = result.action;
         const now = Date.now();
-        
+
         // Throttle events - only log if same action hasn't been logged in last 5 seconds
         const lastTime = lastEventTimeRef.current[action] || 0;
         if (now - lastTime > 5000) {
@@ -281,6 +297,7 @@ function App() {
       if (error.message && !error.message.includes('fetch')) {
         console.error('Error processing frame:', error);
       }
+      setCurrentPrediction(null);
     }
   };
 
@@ -378,6 +395,7 @@ function App() {
                 isActive={isMonitoringRef.current && timerState === 'focus'}
                 cameraId={selectedCameraId}
                 onFrameCapture={handleFrameCapture}
+                currentPrediction={currentPrediction}
               />
               {timerState === 'break' && (
                 <div className="break-indicator secondary-text" style={{ textAlign: 'center', padding: '8px' }}>
